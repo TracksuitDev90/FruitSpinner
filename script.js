@@ -1,10 +1,8 @@
-// app.js
-
 /* ---------- Config ---------- */
 const ICON = (name) => `https://api.iconify.design/fluent-emoji/${encodeURIComponent(name.toLowerCase())}.svg`;
 const unsplash = (id) => `https://images.unsplash.com/photo-${id}?q=80&w=2400&auto=format&fit=crop`;
 
-/* Fruits (now includes Coconut; Apple is split visually but behaves as one pick) */
+/* Fruits (Apple is a split visual; Coconut added) */
 const FRUITS = [
   { name: 'Strawberry', base: '#df2b2b', photo: unsplash('0jRQ-_fM0gM'), icon: ICON('strawberry') },
   { name: 'Orange',     base: '#fb8c00', photo: unsplash('8ZGgg6rhzxs'), icon: ICON('tangerine') },
@@ -16,7 +14,7 @@ const FRUITS = [
   { name: 'Watermelon', base: '#eb3a78', photo: unsplash('aFUHu9WNO3Q'), icon: ICON('watermelon') },
   { name: 'Mango',      base: '#ffb300', photo: unsplash('H-KyBAT6fxk'), icon: ICON('mango') },
 
-  // Apple: split wedge (red/green) but one pick disables both halves
+  // Apple (split red/green, but one pick disables both halves)
   {
     name: 'Apple',
     split: true,
@@ -25,7 +23,7 @@ const FRUITS = [
     icons:  [ICON('red-apple'), ICON('green-apple')],
     imgs:   [null, null],
     ready:  [false, false],
-    subDisabled: [false, false] // visual; both become true when Apple is picked
+    subDisabled: [false, false]
   },
 
   // Coconut
@@ -45,7 +43,7 @@ function secureRandomInt(n){
   return x % n;
 }
 
-/* ---------- Canvas & Elements ---------- */
+/* ---------- Elements & state ---------- */
 const canvas = document.getElementById('wheel');
 const ctx = canvas.getContext('2d', { alpha: true });
 ctx.imageSmoothingQuality = 'high';
@@ -76,7 +74,7 @@ function resizeCanvas(){
 }
 window.addEventListener('resize', resizeCanvas);
 
-/* ---------- Image preload (robust for CodePen) ---------- */
+/* ---------- Image preload (CORS-safe for GitHub Pages) ---------- */
 let imagesLoading = 0;
 FRUITS.forEach(f => {
   if (f.split){
@@ -124,7 +122,7 @@ function drawImageCover(img, r){
   ctx.drawImage(img, -iw*s/2, -ih*s/2, iw*s, ih*s);
 }
 
-/* Curved, auto-fit label along outer ring */
+/* Curved, auto-fit label */
 function drawArcLabel(text, radius, centerAngle, arcAngle, color, maxHeight){
   const label = text.toUpperCase();
   let fontPx = Math.min(maxHeight, Math.floor(state.sizeCSS * 0.055));
@@ -181,7 +179,7 @@ function draw(){
   ctx.translate(cx, cy);
   ctx.rotate(state.rotation);
 
-  // base disc
+  // disc
   ctx.beginPath(); ctx.arc(0,0,R,0,TWO_PI);
   const bgGrad = ctx.createRadialGradient(0,0,R*0.15, 0,0,R);
   bgGrad.addColorStop(0,'#0d111b'); bgGrad.addColorStop(1,'#090c13');
@@ -192,7 +190,7 @@ function draw(){
     const start = i * sliceAngle, end = start + sliceAngle, mid = start + sliceAngle/2;
 
     if (f.split){
-      // two halves (red / green)
+      // red/green halves
       const halves = [
         { a0: start, a1: mid, base: f.bases[0], img: f.imgs[0], ready: f.ready[0], disabled: f.subDisabled[0] },
         { a0: mid,   a1: end, base: f.bases[1], img: f.imgs[1], ready: f.ready[1], disabled: f.subDisabled[1] }
@@ -206,7 +204,6 @@ function draw(){
           g.addColorStop(0,'rgba(255,255,255,.045)'); g.addColorStop(1,'rgba(0,0,0,.22)');
           ctx.fillStyle = g; ctx.fillRect(-innerR,-innerR,innerR*2,innerR*2);
         } else {
-          // subtle fallback pattern
           const off = document.createElement('canvas'); off.width = off.height = 32;
           const oc = off.getContext('2d');
           oc.fillStyle = h.base; oc.fillRect(0,0,32,32);
@@ -220,7 +217,7 @@ function draw(){
         ctx.beginPath(); ctx.arc(0,0,R,h.a0,h.a1); ctx.arc(0,0,innerR,h.a1,h.a0,true); ctx.closePath();
         ctx.fillStyle = h.base; ctx.fill();
 
-        // gray overlay for used half
+        // gray-out if used
         if (h.disabled){
           ctx.save();
           ctx.beginPath(); ctx.arc(0,0,R,h.a0,h.a1); ctx.lineTo(0,0); ctx.closePath(); ctx.clip();
@@ -231,15 +228,14 @@ function draw(){
         }
       });
 
-      // separator at center of Apple
+      // center split line
       ctx.lineWidth = Math.max(1, size*0.002);
       ctx.strokeStyle = 'rgba(255,255,255,.45)';
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(innerR*Math.cos(mid), innerR*Math.sin(mid)); ctx.stroke();
 
-      // label "APPLE"
+      // label
       const labelRadius = innerR + ringThickness * 0.60;
-      const labelColor  = '#fff';
-      drawArcLabel('Apple', labelRadius, mid, sliceAngle, labelColor, ringThickness * 0.70);
+      drawArcLabel('Apple', labelRadius, mid, sliceAngle, '#fff', ringThickness * 0.70);
 
     } else {
       // inner photo
@@ -271,10 +267,9 @@ function draw(){
 
       // label
       const labelRadius = innerR + ringThickness * 0.60;
-      const labelColor  = pickLabelColor(f.base);
-      drawArcLabel(f.name, labelRadius, mid, sliceAngle, labelColor, ringThickness * 0.70);
+      drawArcLabel(f.name, labelRadius, mid, sliceAngle, pickLabelColor(f.base), ringThickness * 0.70);
 
-      // gray-out if disabled
+      // gray-out
       if (f.disabled){
         ctx.save();
         ctx.beginPath(); ctx.arc(0,0,R,start,end); ctx.lineTo(0,0); ctx.closePath(); ctx.clip();
@@ -304,7 +299,6 @@ function normalizeAngle(a){
   a = a % TWO_PI; if (a > Math.PI) a -= TWO_PI; if (a < -Math.PI) a += TWO_PI;
   return a + TWO_PI * (4 + secureRandomInt(4));
 }
-
 function spin(){
   if (state.spinning) return;
   const choices = activeIndices();
@@ -334,7 +328,7 @@ function spin(){
 
       const f = FRUITS[pick];
       if (f.split){
-        // Apple chosen → disable both halves; user decides red/green IRL
+        // Apple: disable both halves; user chooses red/green IRL
         f.subDisabled = [true, true];
         afterPick('Apple', f, ['#d62828','#2aa74a'], f.icons);
       } else {
@@ -350,7 +344,6 @@ function spin(){
 function openModal(title, border, icons){
   modalTitle.textContent = title;
 
-  // border: single color or two-color gradient (Apple)
   if (border.length === 2){
     modalPanel.style.borderImage = `linear-gradient(90deg, ${border[0]} 0 50%, ${border[1]} 50% 100%) 1`;
   } else {
@@ -358,7 +351,6 @@ function openModal(title, border, icons){
     modalPanel.style.borderColor = border[0];
   }
 
-  // icons container (1 or 2)
   modalIcons.innerHTML = '';
   icons.forEach(src => {
     const img = new Image();
@@ -369,7 +361,6 @@ function openModal(title, border, icons){
   modal.hidden = false;
   modalOk.focus();
 }
-
 function afterPick(label, fruit, borderColors, iconList){
   persistDisabled();
   draw();
@@ -381,7 +372,6 @@ function afterPick(label, fruit, borderColors, iconList){
 
   openModal(label, borderColors, iconList);
 }
-
 modalOk.addEventListener('click', () => { modal.hidden = true; });
 modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = true; });
 
@@ -391,8 +381,7 @@ function persistDisabled(){
   localStorage.setItem('simsFruitDisabled_v3', JSON.stringify(data));
 }
 function restoreDisabled(){
-  // v3 preferred; v2 fallback if you used a prior build
-  const raw = localStorage.getItem('simsFruitDisabled_v3') || localStorage.getItem('simsFruitDisabled_v2');
+  const raw = localStorage.getItem('simsFruitDisabled_v3');
   if (!raw) return;
   try{
     const data = JSON.parse(raw);
@@ -404,7 +393,7 @@ function restoreDisabled(){
   }catch{}
 }
 
-/* ---------- Controls ---------- */
+/* ---------- Controls & init ---------- */
 spinBtn.addEventListener('click', spin);
 resetBtn.addEventListener('click', () => {
   FRUITS.forEach(f => { if (f.split) f.subDisabled = [false,false]; else f.disabled = false; });
@@ -414,7 +403,6 @@ resetBtn.addEventListener('click', () => {
   draw();
 });
 
-/* ---------- Init ---------- */
 restoreDisabled();
 resizeCanvas();
 draw();
