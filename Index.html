@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sims Fruit Challenge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Chango&family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1 aria-label="Sims Fruit Challenge">
+      <span>SIMS</span> <span>FRUIT</span> <span>CHALLENGE</span>
+    </h1>
+  </header>
+
+  <main class="stage">
+    <div class="wheel-wrap">
+      <canvas id="wheel" width="720" height="720" aria-label="Fruit selection wheel"></canvas>
+      <div class="pointer" aria-hidden="true"></div>
+      <button id="spin" type="button" aria-label="Spin the wheel">SPIN</button>
+    </div>
+
+    <div class="controls">
+      <button id="reset" type="button" class="ghost">Reset</button>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </div>
+  </main>
+
+  <!-- Winner modal -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div id="modal-icons" class="modal__icons"></div>
+      <h2 id="modal-title"></h2>
+      <button id="modal-ok" class="primary">OK</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
