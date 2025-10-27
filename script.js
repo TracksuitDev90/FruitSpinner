@@ -10,8 +10,7 @@ const FRUITS = [
   { name: 'Watermelon', base: '#eb3a78', emoji: '🍉' },
   { name: 'Mango',      base: '#ffb300', emoji: '🥭' },
 
-  // Apple is a single slice with two-tone halves (red/green),
-  // but counts as ONE pick for fairness.
+  // Apple counts as ONE outcome, visually split red/green
   {
     name: 'Apple',
     split: true,
@@ -20,7 +19,7 @@ const FRUITS = [
     subDisabled: [false, false]
   },
 
-  { name: 'Coconut', base: '#7a4f2a', emoji: '🥥' },
+  { name: 'Coconut',    base: '#7a4f2a', emoji: '🥥' },
   { name: 'Blackberry', base: '#4a148c', emoji: '🫐' }
 ];
 
@@ -151,23 +150,24 @@ function activeIndices(){
   return out;
 }
 
-/* ---------- Curved label drawing ---------- */
+/* ---------- Curved label drawing (uniform size; shrink only if needed) ---------- */
 function drawArcLabel(text, radius, centerAngle, arcAngle, color, maxHeight){
   const label = text.toUpperCase();
-  let fontPx = Math.min(maxHeight, Math.floor(state.sizeCSS * 0.055));
+  const baseFontPx = Math.min(maxHeight, Math.floor(state.sizeCSS * 0.052)); // uniform target across slices
+  let fontPx = baseFontPx;
   const pad = Math.max(6, state.sizeCSS * 0.012);
   ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
 
   let totalAngle;
   while (fontPx > 10){
-    ctx.font = `800 ${fontPx}px Inter, system-ui, sans-serif`;
+    ctx.font = `900 ${fontPx}px Inter, system-ui, sans-serif`;
     const spacing = fontPx * 0.06;
     let width = 0;
     for (const ch of label) width += ctx.measureText(ch).width + spacing;
     width -= spacing;
     totalAngle = (width + pad*2) / radius;
     if (totalAngle <= arcAngle * 0.9) break;
-    fontPx--;
+    fontPx--; // shrink only if it wouldn't fit
   }
 
   const startAngle = centerAngle - totalAngle/2;
@@ -243,7 +243,7 @@ function draw(){
         const fillBase = h.disabled ? desaturate(h.base, 0.9, 0.12) : h.base;
         const fillAccent = h.disabled ? desaturate(lighten(h.base,0.18), 0.9, 0.12) : lighten(h.base,0.18);
 
-        // inner flat sector (accent)
+        // inner accent sector
         ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,innerR,h.a0,h.a1); ctx.closePath();
         ctx.fillStyle = fillAccent; ctx.fill();
 
@@ -321,8 +321,7 @@ function spin(){
   const delta = normalizeAngle(baseTarget - startRotation, extraTurns);
   const duration = prefersReduced ? 900 : (5200 + secureRandomInt(1200));
 
-  // button tactile state
-  // handled via pointer listeners; but ensure quick visual if keyboard
+  // keep tactile pressed style briefly (in case keyboard click)
   spinBtn.classList.add('pressed');
 
   const t0 = performance.now();
@@ -439,10 +438,10 @@ function afterPick(label, emojis, colorList){
 /* ---------- Persistence ---------- */
 function persistDisabled(){
   const data = FRUITS.map(f => f.split ? { split:true, sub:f.subDisabled } : !!f.disabled);
-  localStorage.setItem('simsFruitDisabled_v4', JSON.stringify(data));
+  localStorage.setItem('simsFruitDisabled_v5', JSON.stringify(data));
 }
 function restoreDisabled(){
-  const raw = localStorage.getItem('simsFruitDisabled_v4');
+  const raw = localStorage.getItem('simsFruitDisabled_v5');
   if (!raw) return;
   try{
     const data = JSON.parse(raw);
@@ -454,18 +453,68 @@ function restoreDisabled(){
   }catch{}
 }
 
+/* ---------- BUBBLE PARTICLES (press burst) ---------- */
+function allFruitColors(){
+  const colors = [];
+  FRUITS.forEach(f=>{
+    if (f.split) colors.push(...f.bases);
+    else colors.push(f.base);
+  });
+  return colors;
+}
+const COLORS = allFruitColors();
+
+function spawnBubbles(ev){
+  // origin within the button
+  const rect = spinBtn.getBoundingClientRect();
+  const x = (ev?.clientX ?? (ev?.touches && ev.touches[0]?.clientX) ?? (rect.left + rect.width/2)) - rect.left;
+  const y = (ev?.clientY ?? (ev?.touches && ev.touches[0]?.clientY) ?? (rect.top + rect.height/2)) - rect.top;
+
+  const count = 12 + secureRandomInt(9); // 12–20
+  for (let i=0; i<count; i++){
+    const b = document.createElement('span');
+    b.className = 'bubble';
+    const color = COLORS[secureRandomInt(COLORS.length)];
+    const size = 6 + secureRandomInt(12); // 6–17px
+    const filled = secureRandomInt(100) < 70; // 70% filled, 30% outlined
+    const dur = 520 + secureRandomInt(260);   // 520–780ms
+    const delay = secureRandomInt(60);        // small staggering
+
+    // aim mostly upward with a little spread
+    const angle = (-90 + (secureRandomInt(80) - 40)) * (Math.PI/180); // -130..-50 degrees
+    const dist = 40 + secureRandomInt(60); // 40–100px
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist; // negative goes up
+
+    Object.assign(b.style, {
+      '--x': `${x - size/2}px`,
+      '--y': `${y - size/2}px`,
+      '--dx': `${dx}px`,
+      '--dy': `${dy}px`,
+      '--dur': `${dur}ms`,
+      '--delay': `${delay}ms`,
+      left: '0px',
+      top: '0px',
+      width: `${size}px`,
+      height: `${size}px`,
+      background: filled ? color : 'transparent',
+      border: filled ? 'none' : `2px solid ${color}`,
+      boxShadow: 'none'
+    });
+
+    spinBtn.appendChild(b);
+    b.addEventListener('animationend', ()=> b.remove(), { once:true });
+  }
+}
+
 /* ---------- Controls & init ---------- */
 function resetAll(){
   FRUITS.forEach(f => { if (f.split) f.subDisabled = [false,false]; else f.disabled = false; });
-  localStorage.removeItem('simsFruitDisabled_v4');
+  localStorage.removeItem('simsFruitDisabled_v5');
   state.rotation = 0; state.spinning = false;
   spinBtn.disabled = false; draw();
 }
 
-spinBtn.addEventListener('click', spin);
-resetBtn.addEventListener('click', () => { resetAll(); statusEl.textContent = ''; });
-
-/* Tactile press + ripple (mouse & touch) */
 function pressStart(ev){
   const rect = spinBtn.getBoundingClientRect();
   const x = (ev.clientX ?? (ev.touches && ev.touches[0].clientX)) - rect.left;
@@ -474,18 +523,36 @@ function pressStart(ev){
   spinBtn.style.setProperty('--ry', `${y}px`);
   spinBtn.classList.add('pressed');
   spinBtn.classList.remove('rippling');
-  // trigger reflow to restart animation cleanly
+  // restart ripple
   // eslint-disable-next-line no-unused-expressions
   spinBtn.offsetTop;
   spinBtn.classList.add('rippling');
+
+  // particles
+  spawnBubbles(ev);
 }
-function pressEnd(){
-  spinBtn.classList.remove('pressed');
-}
+function pressEnd(){ spinBtn.classList.remove('pressed'); }
+
 spinBtn.addEventListener('pointerdown', pressStart);
 spinBtn.addEventListener('pointerup', pressEnd);
 spinBtn.addEventListener('pointerleave', pressEnd);
 spinBtn.addEventListener('pointercancel', pressEnd);
+
+// Keyboard: spawn bubbles on Enter/Space and spin
+spinBtn.addEventListener('keydown', (e)=>{
+  if (e.key === 'Enter' || e.key === ' '){
+    spawnBubbles();
+    spin();
+    e.preventDefault(); // prevent duplicate click
+  }
+});
+
+// Pointer/mouse click triggers spin (keyboard path above already handles spin)
+spinBtn.addEventListener('click', ()=>{
+  if (!state.spinning) spin();
+});
+
+resetBtn.addEventListener('click', () => { resetAll(); statusEl.textContent = ''; });
 
 modalOk.addEventListener('click', closeModal);
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
