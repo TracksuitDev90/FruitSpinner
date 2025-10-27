@@ -2,44 +2,41 @@
   --ink: #e9eef5;
   --muted: #9aa4b2;
   --wheel-size: clamp(300px, 92vmin, 720px);
-  --inner-coverage: 0.88; /* flat inner coverage */
-  --ring: #7ac9ff;
-  --ring-bg: rgba(122, 201, 255, .25);
+  --inner-coverage: 0.88;
+
+  /* button theme */
+  --spin-bg-1: #ffffff;
+  --spin-bg-2: #d4e7ff;
+  --spin-bg-3: #a6d3ff;
+  --spin-bg-4: #7ac9ff;
+  --bb-default: #8fb4de; /* grayish blue baseline if we don’t randomize */
 }
 
-/* OLED-dark base */
+/* OLED dark */
 *{ box-sizing: border-box; }
 html, body { height: 100%; }
 body{
   margin: 0;
-  background: #000; /* OLED pure black */
+  background: #000;
   color: var(--ink);
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
   display: grid;
   grid-template-rows: auto 1fr;
 }
 
-/* Modern header */
-.site-header{ text-align: center; padding: 18px 16px 8px; }
+/* Header */
+.site-header{ text-align:center; padding:18px 16px 8px; }
 .site-header h1{
-  margin: 0;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  font-weight: 900;
-  font-size: clamp(26px, 6.2vmin, 62px);
-  letter-spacing: 0.5px;
-  line-height: 1.05;
-  display: inline-block;
-  filter: drop-shadow(0 6px 20px rgba(0,0,0,.85));
-  white-space: nowrap;
+  margin:0; font-weight:900; font-size:clamp(26px,6.2vmin,62px); letter-spacing:.5px; line-height:1.05;
+  filter: drop-shadow(0 6px 20px rgba(0,0,0,.85)); white-space:nowrap;
 }
-.h1-word{ background: linear-gradient(#dfe6f3,#b7c5de); -webkit-background-clip:text; background-clip:text; color: transparent; }
-.h1-fruit{
-  /* extra colorful just for FRUIT */
+.site-header h1 .h1-word{ background: linear-gradient(#dfe6f3,#b7c5de); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.site-header h1 .h1-fruit{
   background: conic-gradient(from 0deg, #ff6aa3, #ffd36b, #7ef2b7, #7ac9ff, #c3a6ff, #ff8dda, #ff6aa3);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-background-clip:text; background-clip:text; color:transparent;
 }
 
-.stage{ display: grid; place-items: center; padding: 10px 16px 28px; gap: 16px; }
+.stage{ display:grid; place-items:center; padding:10px 16px 28px; gap:16px; }
 
 .wheel-wrap{
   position: relative;
@@ -50,122 +47,180 @@ body{
   filter: drop-shadow(0 18px 40px rgba(0,0,0,.75));
 }
 #wheel{
-  display:block; /* remove inline baseline gap */
+  display:block;
   width: 100%; height: 100%; border-radius: 50%;
-  background: #0a0a0a; /* very dark */
+  background: #0a0a0a;
   box-shadow:
     inset 0 0 0 2px rgba(255,255,255,.05),
     inset 0 0 60px rgba(255,255,255,.04);
 }
 
-/* pointer */
-.pointer{
-  position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-  width: 0; height: 0; z-index: 3; pointer-events: none; user-select: none;
-  border-left: 18px solid transparent; border-right: 18px solid transparent;
-  border-bottom: 30px solid #fff;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,.6));
-}
-.pointer::after{
-  content: ""; position: absolute; top: 26px; left: -14px;
-  width: 28px; height: 7px; border-radius: 5px; background: rgba(255,255,255,.9);
-}
+/* REMOVE ARROW */
+.pointer{ display:none !important; }
 
-/* center button (tactile + ripple + bubbles container) */
+/* ----- SPIN button ----- */
 #spin{
-  position: absolute;
+  position:absolute;
   width: clamp(96px, 18vmin, 150px);
   height: clamp(96px, 18vmin, 150px);
-  border-radius: 50%; border: 0;
+  border-radius: 50%;
+  border: 0;
   font-weight: 900; letter-spacing: .6px; font-size: clamp(16px, 2.2vmin, 22px);
   color: #0d1220;
-  background: radial-gradient(120% 100% at 30% 25%, #ffffff 0%, #d4e7ff 35%, #a6d3ff 70%, #7ac9ff 100%);
+  background: radial-gradient(120% 100% at 30% 25%, var(--spin-bg-1) 0%, var(--spin-bg-2) 35%, var(--spin-bg-3) 70%, var(--spin-bg-4) 100%);
   box-shadow: 0 12px 26px rgba(0,0,0,.6), inset 0 3px 8px rgba(255,255,255,.7), inset 0 -8px 14px rgba(0,0,0,.25);
   cursor: pointer; z-index: 2; transition: transform .12s ease, opacity .2s ease;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-  overflow: visible; /* so bubbles can leave the button */
 }
 #spin:hover{ transform: translateY(-1px) scale(1.02); }
-#spin:active,
-#spin.pressed { transform: translateY(1px) scale(.965); }
-#spin[disabled]{ opacity: .6; cursor: not-allowed; }
+#spin:active{ transform: translateY(1px) scale(.965); }
+#spin[disabled]{ opacity:.6; cursor:not-allowed; }
 
-/* Subtle ripple (kept simple, no neon glow) */
-#spin::before{
-  content:""; position:absolute; left:var(--rx,50%); top:var(--ry,50%);
-  width:0; height:0; border-radius:50%;
-  transform: translate(-50%,-50%);
-  background: rgba(255,255,255,.45);
-  pointer-events: none;
-}
-#spin.rippling::before{ animation: ripple .45s ease-out forwards; }
-@keyframes ripple{
-  from{ width:0; height:0; opacity:.5; }
-  to  { width:240%; height:240%; opacity:0; }
-}
+/* Controls */
+.controls{ display:flex; align-items:center; gap:12px; margin-top:6px; }
+.ghost{ background:transparent; border:1px solid rgba(255,255,255,.18); color:var(--muted); padding:8px 12px; border-radius:8px; cursor:pointer; }
+.ghost:hover{ border-color:rgba(255,255,255,.35); color:#fff; }
+.status{ min-height:1.5em; color:var(--muted); font-weight:600; letter-spacing:.2px; }
 
-/* Bubble particles (inspired by the CodePen, no glow) */
-.bubble{
-  position:absolute; left:0; top:0;
-  border-radius:50%;
-  pointer-events:none;
-  opacity:.95;
-  transform: translate(var(--x,0px), var(--y,0px)) scale(.2);
-  animation: bubble var(--dur,650ms) ease-out var(--delay,0ms) forwards;
-  will-change: transform, opacity;
+/* Modal */
+.modal{ position:fixed; inset:0; background:rgba(0,0,0,.65); display:grid; place-items:center; z-index:10; }
+.modal[hidden]{ display:none; }
+.modal__panel{
+  width:min(90vw,340px);
+  background:#121212;
+  border:3px solid #7ac9ff;
+  border-radius:14px; padding:16px; text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.8);
 }
-@keyframes bubble{
-  to{
-    transform: translate(calc(var(--x) + var(--dx,0px)), calc(var(--y) + var(--dy,-60px))) scale(1);
-    opacity: 0;
+.modal__icons{ display:flex; justify-content:center; gap:8px; margin-top:2px; font-size:44px; }
+.modal h2{ margin:8px 0 16px; font-size:20px; }
+.primary{ background:#7ac9ff; color:#0b1020; font-weight:800; border:0; border-radius:10px; padding:10px 14px; cursor:pointer; }
+
+/* Focus */
+button:focus { outline:none; }
+button:focus-visible {
+  box-shadow: 0 0 0 2px #7ac9ff, 0 0 0 6px rgba(122,201,255,.25);
+}
+#spin:focus-visible { transform: translateY(-1px) scale(1.02); }
+[inert]{ pointer-events:none; user-select:none; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){ #spin{ transition:none; } }
+
+/* ================================
+   BUBBLE EFFECT from CodePen (CSS)
+   Source: https://codepen.io/nourabusoud/pen/ypZzMM
+   The next block is the original effect, copied verbatim (compiled to CSS),
+   then we override colors/shape below without changing its mechanics.
+   ================================ */
+
+/* baseline class we add to #spin */
+.bubbly-button{
+  font-family: 'Helvetica','Arial',sans-serif;
+  display:inline-block;
+  font-size:1em;
+  padding:1em 2em;
+  margin:0; /* we don't use page margins */
+  -webkit-appearance:none; appearance:none;
+  background-color:#ff0081; /* overridden below */
+  color:#fff;
+  border-radius:4px; /* overridden to circular below on #spin */
+  border:none;
+  cursor:pointer;
+  position:relative;
+  transition: transform ease-in .1s, box-shadow ease-in .25s;
+  box-shadow: 0 2px 25px rgba(255,0,130,.5); /* overridden below */
+}
+.bubbly-button:focus{ outline:0; }
+.bubbly-button:before,
+.bubbly-button:after{
+  position:absolute; content:''; display:block;
+  width:140%; height:100%; left:-20%;
+  z-index:-1000; transition: all ease-in-out .5s;
+  background-repeat:no-repeat;
+}
+.bubbly-button:before{
+  display:none; top:-75%;
+  background-image:
+    radial-gradient(circle, #ff0081 20%, transparent 20%),
+    radial-gradient(circle, transparent 20%, #ff0081 20%, transparent 30%),
+    radial-gradient(circle, #ff0081 20%, transparent 20%),
+    radial-gradient(circle, #ff0081 20%, transparent 20%),
+    radial-gradient(circle, transparent 10%, #ff0081 15%, transparent 20%),
+    radial-gradient(circle, #ff0081 20%, transparent 20%),
+    radial-gradient(circle, #ff0081 20%, transparent 20%),
+    radial-gradient(circle, #ff0081 20%, transparent 20%),
+    radial-gradient(circle, #ff0081 20%, transparent 20%);
+  background-size: 10% 10%,20% 20%,15% 15%,20% 20%,18% 18%,10% 10%,15% 15%,10% 10%,18% 18%;
+}
+.bubbly-button:after{
+  display:none; bottom:-75%;
+  background-image:
+    radial-gradient(circle, #ff0081 20%, transparent 20%),
+    radial-gradient(circle, #ff0081 20%, transparent 20%),
+    radial-gradient(circle, transparent 10%, #ff0081 15%, transparent 20%),
+    radial-gradient(circle, #ff0081 20%, transparent 20%),
+    radial-gradient(circle, #ff0081 20%, transparent 20%),
+    radial-gradient(circle, #ff0081 20%, transparent 20%),
+    radial-gradient(circle, #ff0081 20%, transparent 20%);
+  background-size: 15% 15%,20% 20%,18% 18%,20% 20%,15% 15%,10% 10%,20% 20%;
+}
+.bubbly-button:active{
+  transform: scale(0.9);
+  background-color: #e60074;
+  box-shadow: 0 2px 25px rgba(255,0,130,.2);
+}
+.bubbly-button.animate:before{ display:block; animation: topBubbles .75s ease-in-out forwards; }
+.bubbly-button.animate:after { display:block; animation: bottomBubbles .75s ease-in-out forwards; }
+
+@keyframes topBubbles{
+  0%  { background-position:5% 90%,10% 90%,10% 90%,15% 90%,25% 90%,25% 90%,40% 90%,55% 90%,70% 90%; }
+  50% { background-position:0% 80%,0% 20%,10% 40%,20% 0%,30% 30%,22% 50%,50% 50%,65% 20%,90% 30%; }
+  100%{
+    background-position:0% 70%,0% 10%,10% 30%,20% -10%,30% 20%,22% 40%,50% 40%,65% 10%,90% 20%;
+    background-size:0% 0%,0% 0%,0% 0%,0% 0%,0% 0%,0% 0%;
+  }
+}
+@keyframes bottomBubbles{
+  0%  { background-position:10% -10%,30% 10%,55% -10%,70% -10%,85% -10%,70% -10%,70% 0%; }
+  50% { background-position:0% 80%,20% 80%,45% 60%,60% 100%,75% 70%,95% 60%,105% 0%; }
+  100%{
+    background-position:0% 90%,20% 90%,45% 70%,60% 110%,75% 80%,95% 70%,110% 10%;
+    background-size:0% 0%,0% 0%,0% 0%,0% 0%,0% 0%,0% 0%;
   }
 }
 
-/* Controls */
-.controls{ display: flex; align-items: center; gap: 12px; margin-top: 6px; }
-.ghost{ background: transparent; border: 1px solid rgba(255,255,255,.18); color: var(--muted); padding: 8px 12px; border-radius: 8px; cursor: pointer; }
-.ghost:hover{ border-color: rgba(255,255,255,.35); color: #fff; }
-
-.status{ min-height: 1.5em; color: var(--muted); font-weight: 600; letter-spacing: .2px; }
-
-/* modal */
-.modal{ position: fixed; inset: 0; background: rgba(0,0,0,.65); display: grid; place-items: center; z-index: 10; }
-.modal[hidden]{ display: none; }
-.modal__panel{
-  width: min(90vw, 340px);
-  background: #121212;
-  border: 3px solid #7ac9ff; /* will be themed per fruit */
-  border-radius: 14px; padding: 16px; text-align: center;
-  box-shadow: 0 20px 60px rgba(0,0,0,.8);
+/* ---- Overrides for our app (keeps effect mechanics) ---- */
+#spin.bubbly-button{
+  /* circular grayish-blue button theme */
+  background: radial-gradient(120% 100% at 30% 25%, var(--spin-bg-1) 0%, var(--spin-bg-2) 35%, var(--spin-bg-3) 70%, var(--spin-bg-4) 100%);
+  color:#0d1220; border-radius:50%;
+  box-shadow: 0 12px 26px rgba(0,0,0,.6), inset 0 3px 8px rgba(255,255,255,.7), inset 0 -8px 14px rgba(0,0,0,.25);
 }
-.modal__icons{
-  display: flex; justify-content: center; gap: 8px; margin-top: 2px; font-size: 44px;
+/* Let JS swap bubble colors & sizes each press via CSS variables */
+#spin.bubbly-button:before{
+  background-image: var(--top-bg,
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%),
+    radial-gradient(circle, transparent 20%, var(--bb-default) 20%, transparent 30%),
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%),
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%),
+    radial-gradient(circle, transparent 10%, var(--bb-default) 15%, transparent 20%),
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%),
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%),
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%),
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%)
+  );
+  background-size: var(--top-size, 10% 10%,20% 20%,15% 15%,20% 20%,18% 18%,10% 10%,15% 15%,10% 10%,18% 18%);
 }
-.modal h2{ margin: 8px 0 16px; font-size: 20px; }
-.primary{ background: #7ac9ff; color: #0b1020; font-weight: 800; border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer; }
-
-/* Focus visibility */
-button:focus { outline: none; }
-button:focus-visible {
-  box-shadow:
-    0 0 0 2px var(--ring),
-    0 0 0 6px var(--ring-bg);
-}
-#spin:focus-visible { transform: translateY(-1px) scale(1.02); }
-
-/* When app is inert behind modal */
-[inert] { pointer-events: none; user-select: none; }
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce){
-  #spin{ transition: none; }
-  #spin.rippling::before{ animation-duration: .2s; }
-}
-
-/* Forced-colors / High-contrast */
-@media (forced-colors: active) {
-  .ghost { border-color: ButtonText; color: ButtonText; }
-  .primary { background: Highlight; color: HighlightText; }
-  .modal__panel { border-color: Highlight; }
-  #spin { color: ButtonText; }
+#spin.bubbly-button:after{
+  background-image: var(--bot-bg,
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%),
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%),
+    radial-gradient(circle, transparent 10%, var(--bb-default) 15%, transparent 20%),
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%),
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%),
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%),
+    radial-gradient(circle, var(--bb-default) 20%, transparent 20%)
+  );
+  background-size: var(--bot-size, 15% 15%,20% 20%,18% 18%,20% 20%,15% 15%,10% 10%,20% 20%);
 }
