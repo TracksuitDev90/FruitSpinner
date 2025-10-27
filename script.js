@@ -1,38 +1,98 @@
-/* ---------- Config ---------- */
-const ICON = (name) => `https://api.iconify.design/fluent-emoji/${encodeURIComponent(name.toLowerCase())}.svg`;
-const unsplash = (id) => `https://images.unsplash.com/photo-${id}?q=80&w=2400&auto=format&fit=crop`;
-
-/* Fruits (Apple is a split visual; Coconut added) */
+/* ---------- Two-tone, flat fruit config ---------- */
 const FRUITS = [
-  { name: 'Strawberry', base: '#df2b2b', photo: unsplash('0jRQ-_fM0gM'), icon: ICON('strawberry') },
-  { name: 'Orange',     base: '#fb8c00', photo: unsplash('8ZGgg6rhzxs'), icon: ICON('tangerine') },
-  { name: 'Lemon',      base: '#f2ce24', photo: unsplash('ihvcGNo_mUY'), icon: ICON('lemon') },
-  { name: 'Lime',       base: '#3fa64b', photo: unsplash('HiNkYqYYUAM'), icon: ICON('lime') },
-  { name: 'Blueberry',  base: '#2060c9', photo: unsplash('ZBZV975pMsg'), icon: ICON('blueberries') },
-  { name: 'Grape',      base: '#7b3bb6', photo: unsplash('ixuOeZ_7TIY'), icon: ICON('grapes') },
-  { name: 'Kiwi',       base: '#72b33f', photo: unsplash('jtMGK1RuaUA'), icon: ICON('kiwi-fruit') },
-  { name: 'Watermelon', base: '#eb3a78', photo: unsplash('aFUHu9WNO3Q'), icon: ICON('watermelon') },
-  { name: 'Mango',      base: '#ffb300', photo: unsplash('H-KyBAT6fxk'), icon: ICON('mango') },
+  { name: 'Strawberry', base: '#df2b2b', emoji: '🍓' },
+  { name: 'Orange',     base: '#fb8c00', emoji: '🍊' },
+  { name: 'Lemon',      base: '#f2ce24', emoji: '🍋' },
+  { name: 'Lime',       base: '#3fa64b', emoji: '🟢' },
+  { name: 'Blueberry',  base: '#2060c9', emoji: '🫐' },
+  { name: 'Grape',      base: '#7b3bb6', emoji: '🍇' },
+  { name: 'Kiwi',       base: '#72b33f', emoji: '🥝' },
+  { name: 'Watermelon', base: '#eb3a78', emoji: '🍉' },
+  { name: 'Mango',      base: '#ffb300', emoji: '🥭' },
 
-  // Apple (split red/green, but one pick disables both halves)
+  // Apple is a single slice with two-tone halves (red/green),
+  // but counts as ONE pick for fairness.
   {
     name: 'Apple',
     split: true,
     bases: ['#d62828', '#2aa74a'],
-    photos: [unsplash('1543QZ5Y1DM'), unsplash('N2pzr8iZrcM')],
-    icons:  [ICON('red-apple'), ICON('green-apple')],
-    imgs:   [null, null],
-    ready:  [false, false],
+    emojis: ['🍎','🍏'],
     subDisabled: [false, false]
   },
 
-  // Coconut
-  { name: 'Coconut', base: '#7a4f2a', photo: unsplash('151jV7yb9pU'), icon: ICON('coconut') },
-
-  { name: 'Blackberry', base: '#4a148c', photo: unsplash('h1CC5tDk64o'), icon: ICON('blackberries') }
+  { name: 'Coconut', base: '#7a4f2a', emoji: '🥥' },
+  { name: 'Blackberry', base: '#4a148c', emoji: '🫐' }
 ];
 
-/* ---------- Fair RNG ---------- */
+/* ---------- Math & color helpers ---------- */
+const TWO_PI = Math.PI * 2;
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+function hexToRgb(hex){
+  const m = hex.replace('#','').match(/.{1,2}/g);
+  const [r,g,b] = m.map(h => parseInt(h,16));
+  return {r,g,b};
+}
+function rgbToHex(r,g,b){
+  const h = (v)=> v.toString(16).padStart(2,'0');
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+function rgbToHsl(r,g,b){
+  r/=255; g/=255; b/=255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  const l = (max+min)/2;
+  let h, s;
+  if (max===min){ h=s=0; }
+  else{
+    const d = max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){
+      case r: h = (g-b)/d + (g<b?6:0); break;
+      case g: h = (b-r)/d + 2; break;
+      case b: h = (r-g)/d + 4; break;
+    }
+    h/=6;
+  }
+  return {h, s, l};
+}
+function hslToRgb(h,s,l){
+  function hue2rgb(p,q,t){
+    if(t<0) t+=1; if(t>1) t-=1;
+    if(t<1/6) return p+(q-p)*6*t;
+    if(t<1/2) return q;
+    if(t<2/3) return p+(q-p)*(2/3 - t)*6;
+    return p;
+  }
+  let r,g,b;
+  if(s===0){ r=g=b=l; }
+  else{
+    const q = l<0.5 ? l*(1+s) : l+s-l*s;
+    const p = 2*l-q;
+    r = hue2rgb(p,q,h+1/3);
+    g = hue2rgb(p,q,h);
+    b = hue2rgb(p,q,h-1/3);
+  }
+  return { r: Math.round(r*255), g: Math.round(g*255), b: Math.round(b*255) };
+}
+function lighten(hex, amt=0.18){
+  const {r,g,b} = hexToRgb(hex);
+  const {h,s,l} = rgbToHsl(r,g,b);
+  const {r:rr,g:rg,b:rb} = hslToRgb(h, s, clamp(l+amt,0,1));
+  return rgbToHex(rr,rg,rb);
+}
+function desaturate(hex, amt=0.8, lift=0.05){
+  const {r,g,b} = hexToRgb(hex);
+  const {h,s,l} = rgbToHsl(r,g,b);
+  const {r:rr,g:rg,b:rb} = hslToRgb(h, clamp(s*(1-amt),0,1), clamp(l+lift,0,1));
+  return rgbToHex(rr,rg,rb);
+}
+function pickLabelColor(hex){
+  const {r,g,b} = hexToRgb(hex);
+  const lum = 0.2126*(r/255) + 0.7152*(g/255) + 0.0722*(b/255);
+  return lum > 0.6 ? '#111' : '#fff';
+}
+
+/* ---------- Fair RNG (uniform over active slices) ---------- */
 function secureRandomInt(n){
   if (n <= 0) return 0;
   const c = (typeof crypto !== 'undefined' && crypto.getRandomValues) ? crypto : null;
@@ -43,7 +103,7 @@ function secureRandomInt(n){
   return x % n;
 }
 
-/* ---------- Elements & state ---------- */
+/* ---------- Elements ---------- */
 const canvas = document.getElementById('wheel');
 const ctx = canvas.getContext('2d', { alpha: true });
 ctx.imageSmoothingQuality = 'high';
@@ -57,72 +117,41 @@ const modalPanel = document.querySelector('.modal__panel');
 const modalIcons = document.getElementById('modal-icons');
 const modalTitle = document.getElementById('modal-title');
 const modalOk    = document.getElementById('modal-ok');
+const headerEl   = document.querySelector('header');
+const mainEl     = document.querySelector('main');
+const wrap       = document.querySelector('.wheel-wrap');
 
-const TWO_PI = Math.PI * 2;
-const state = { dpr: Math.max(1, window.devicePixelRatio || 1), sizeCSS: 720, rotation: 0, spinning:false };
+let rafId = null;
+const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ---------- Responsive canvas ---------- */
-function resizeCanvas(){
-  const size = Math.min(720, Math.max(320, Math.min(window.innerWidth, window.innerHeight) * 0.92));
-  state.sizeCSS = size;
-  canvas.style.width = `${size}px`;
-  canvas.style.height = `${size}px`;
-  canvas.width  = Math.round(size * state.dpr);
-  canvas.height = Math.round(size * state.dpr);
-  ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
-  draw();
+/* ---------- State ---------- */
+const state = {
+  dpr: Math.max(1, window.devicePixelRatio || 1),
+  sizeCSS: 720,
+  rotation: 0,
+  spinning: false,
+  innerCoverage: 0.88,
+  lastFocus: null
+};
+
+function readCSSVars(){
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--inner-coverage');
+  const n = parseFloat(v || '0.88');
+  state.innerCoverage = Number.isFinite(n) ? n : 0.88;
 }
-window.addEventListener('resize', resizeCanvas);
 
-/* ---------- Image preload (CORS-safe for GitHub Pages) ---------- */
-let imagesLoading = 0;
-FRUITS.forEach(f => {
-  if (f.split){
-    f.photos.forEach((url, i) => {
-      imagesLoading++;
-      const im = new Image();
-      im.crossOrigin = 'anonymous';
-      im.referrerPolicy = 'no-referrer';
-      im.decoding = 'async';
-      im.onload  = ()=>{ f.imgs[i] = im; f.ready[i] = true; if(--imagesLoading===0) draw(); };
-      im.onerror = ()=>{ f.ready[i] = false; if(--imagesLoading===0) draw(); };
-      im.src = url;
-    });
-  } else {
-    imagesLoading++;
-    const im = new Image();
-    im.crossOrigin = 'anonymous';
-    im.referrerPolicy = 'no-referrer';
-    im.decoding = 'async';
-    im.onload  = ()=>{ f.img = im; f.ready = true; if(--imagesLoading===0) draw(); };
-    im.onerror = ()=>{ f.ready = false; if(--imagesLoading===0) draw(); };
-    im.src = f.photo;
-  }
-});
-
-/* ---------- Helpers ---------- */
+/* ---------- Active indices (uniform probability) ---------- */
 function activeIndices(){
   const out = [];
   FRUITS.forEach((f,i) => {
     if (f.split){
-      if (!(f.subDisabled[0] && f.subDisabled[1])) out.push(i);
+      if (!(f.subDisabled[0] && f.subDisabled[1])) out.push(i); // Apple counts once
     } else if (!f.disabled) out.push(i);
   });
   return out;
 }
-function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
-function pickLabelColor(hex){
-  const [r,g,b] = hex.replace('#','').match(/.{1,2}/g).map(h=>parseInt(h,16)/255);
-  const lum = 0.2126*r + 0.7152*g + 0.0722*b;
-  return lum > 0.6 ? '#111' : '#fff';
-}
-function drawImageCover(img, r){
-  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
-  const s = Math.max((r*2)/iw, (r*2)/ih);
-  ctx.drawImage(img, -iw*s/2, -ih*s/2, iw*s, ih*s);
-}
 
-/* Curved, auto-fit label */
+/* ---------- Curved label drawing ---------- */
 function drawArcLabel(text, radius, centerAngle, arcAngle, color, maxHeight){
   const label = text.toUpperCase();
   let fontPx = Math.min(maxHeight, Math.floor(state.sizeCSS * 0.055));
@@ -131,7 +160,7 @@ function drawArcLabel(text, radius, centerAngle, arcAngle, color, maxHeight){
 
   let totalAngle;
   while (fontPx > 10){
-    ctx.font = `700 ${fontPx}px Inter, system-ui, sans-serif`;
+    ctx.font = `800 ${fontPx}px Inter, system-ui, sans-serif`;
     const spacing = fontPx * 0.06;
     let width = 0;
     for (const ch of label) width += ctx.measureText(ch).width + spacing;
@@ -165,13 +194,31 @@ function drawArcLabel(text, radius, centerAngle, arcAngle, color, maxHeight){
   ctx.restore();
 }
 
-/* ---------- Render ---------- */
+/* ---------- Responsive canvas ---------- */
+function resizeCanvas(){
+  state.dpr = Math.max(1, window.devicePixelRatio || 1);
+  const size = Math.round(Math.max(320, Math.min(720, wrap.clientWidth)));
+  state.sizeCSS = size;
+
+  canvas.style.width = `${size}px`;
+  canvas.style.height = `${size}px`;
+
+  canvas.width  = Math.round(size * state.dpr);
+  canvas.height = Math.round(size * state.dpr);
+  ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+
+  readCSSVars();
+  draw();
+}
+window.addEventListener('resize', resizeCanvas, { passive: true });
+
+/* ---------- Render (flat two-tone) ---------- */
 function draw(){
   const size = state.sizeCSS;
   const cx = size/2, cy = size/2;
   const R = size/2 * 0.96;
-  const innerR = R * parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--inner-coverage'));
-  const ringThickness = R - innerR;
+  const innerR = R * state.innerCoverage;
+  const ringT = R - innerR;
   const sliceAngle = TWO_PI / FRUITS.length;
 
   ctx.clearRect(0,0,size,size);
@@ -179,53 +226,30 @@ function draw(){
   ctx.translate(cx, cy);
   ctx.rotate(state.rotation);
 
-  // disc
+  // matte disc
   ctx.beginPath(); ctx.arc(0,0,R,0,TWO_PI);
-  const bgGrad = ctx.createRadialGradient(0,0,R*0.15, 0,0,R);
-  bgGrad.addColorStop(0,'#0d111b'); bgGrad.addColorStop(1,'#090c13');
-  ctx.fillStyle = bgGrad; ctx.fill();
+  ctx.fillStyle = '#0b0b0b'; ctx.fill();
 
   for (let i=0;i<FRUITS.length;i++){
     const f = FRUITS[i];
-    const start = i * sliceAngle, end = start + sliceAngle, mid = start + sliceAngle/2;
+    const start = i*sliceAngle, end = start + sliceAngle, mid = start + sliceAngle/2;
 
     if (f.split){
-      // red/green halves
       const halves = [
-        { a0: start, a1: mid, base: f.bases[0], img: f.imgs[0], ready: f.ready[0], disabled: f.subDisabled[0] },
-        { a0: mid,   a1: end, base: f.bases[1], img: f.imgs[1], ready: f.ready[1], disabled: f.subDisabled[1] }
+        { a0: start, a1: mid, base: f.bases[0], disabled: f.subDisabled[0] },
+        { a0: mid,   a1: end, base: f.bases[1], disabled: f.subDisabled[1] }
       ];
-      halves.forEach(h => {
-        ctx.save();
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,innerR,h.a0,h.a1); ctx.closePath(); ctx.clip();
-        if (h.ready && h.img){
-          drawImageCover(h.img, innerR);
-          const g = ctx.createRadialGradient(0,0,innerR*0.2, 0,0,innerR);
-          g.addColorStop(0,'rgba(255,255,255,.045)'); g.addColorStop(1,'rgba(0,0,0,.22)');
-          ctx.fillStyle = g; ctx.fillRect(-innerR,-innerR,innerR*2,innerR*2);
-        } else {
-          const off = document.createElement('canvas'); off.width = off.height = 32;
-          const oc = off.getContext('2d');
-          oc.fillStyle = h.base; oc.fillRect(0,0,32,32);
-          oc.globalAlpha = 0.12; oc.fillStyle = '#fff';
-          for(let j=0;j<26;j++){ oc.beginPath(); oc.arc(Math.random()*32, Math.random()*32, Math.random()*1.1+0.3, 0, TWO_PI); oc.fill(); }
-          ctx.fillStyle = ctx.createPattern(off,'repeat'); ctx.fillRect(-innerR,-innerR,innerR*2,innerR*2);
-        }
-        ctx.restore();
+      halves.forEach(h=>{
+        const fillBase = h.disabled ? desaturate(h.base, 0.9, 0.12) : h.base;
+        const fillAccent = h.disabled ? desaturate(lighten(h.base,0.18), 0.9, 0.12) : lighten(h.base,0.18);
 
-        // ring wedge
+        // inner flat sector (accent)
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,innerR,h.a0,h.a1); ctx.closePath();
+        ctx.fillStyle = fillAccent; ctx.fill();
+
+        // ring wedge (base)
         ctx.beginPath(); ctx.arc(0,0,R,h.a0,h.a1); ctx.arc(0,0,innerR,h.a1,h.a0,true); ctx.closePath();
-        ctx.fillStyle = h.base; ctx.fill();
-
-        // gray-out if used
-        if (h.disabled){
-          ctx.save();
-          ctx.beginPath(); ctx.arc(0,0,R,h.a0,h.a1); ctx.lineTo(0,0); ctx.closePath(); ctx.clip();
-          ctx.fillStyle = 'rgba(200,200,200,.60)'; ctx.fillRect(-R,-R,R*2,R*2);
-          ctx.globalAlpha = 0.35; ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 2;
-          for (let y=-R; y<R; y+=12){ ctx.beginPath(); ctx.moveTo(-R, y); ctx.lineTo(R, y+R*2); ctx.stroke(); }
-          ctx.restore();
-        }
+        ctx.fillStyle = fillBase; ctx.fill();
       });
 
       // center split line
@@ -234,31 +258,20 @@ function draw(){
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(innerR*Math.cos(mid), innerR*Math.sin(mid)); ctx.stroke();
 
       // label
-      const labelRadius = innerR + ringThickness * 0.60;
-      drawArcLabel('Apple', labelRadius, mid, sliceAngle, '#fff', ringThickness * 0.70);
+      const labelRadius = innerR + ringT * 0.60;
+      drawArcLabel('Apple', labelRadius, mid, sliceAngle, '#fff', ringT * 0.70);
 
     } else {
-      // inner photo
-      ctx.save();
-      ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,innerR,start,end); ctx.closePath(); ctx.clip();
-      if (f.ready && f.img){
-        drawImageCover(f.img, innerR);
-        const g = ctx.createRadialGradient(0,0,innerR*0.2, 0,0,innerR);
-        g.addColorStop(0,'rgba(255,255,255,.045)'); g.addColorStop(1,'rgba(0,0,0,.22)');
-        ctx.fillStyle = g; ctx.fillRect(-innerR,-innerR,innerR*2,innerR*2);
-      } else {
-        const off = document.createElement('canvas'); off.width = off.height = 32;
-        const oc = off.getContext('2d');
-        oc.fillStyle = f.base; oc.fillRect(0,0,32,32);
-        oc.globalAlpha = 0.12; oc.fillStyle = '#fff';
-        for(let j=0;j<26;j++){ oc.beginPath(); oc.arc(Math.random()*32, Math.random()*32, Math.random()*1.1+0.3, 0, TWO_PI); oc.fill(); }
-        ctx.fillStyle = ctx.createPattern(off,'repeat'); ctx.fillRect(-innerR,-innerR,innerR*2,innerR*2);
-      }
-      ctx.restore();
+      const base = f.disabled ? desaturate(f.base, 0.9, 0.12) : f.base;
+      const accent = f.disabled ? desaturate(lighten(f.base,0.18), 0.9, 0.12) : lighten(f.base,0.18);
 
-      // ring
+      // inner accent sector
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,innerR,start,end); ctx.closePath();
+      ctx.fillStyle = accent; ctx.fill();
+
+      // ring base
       ctx.beginPath(); ctx.arc(0,0,R,start,end); ctx.arc(0,0,innerR,end,start,true); ctx.closePath();
-      ctx.fillStyle = f.base; ctx.fill();
+      ctx.fillStyle = base; ctx.fill();
 
       // separator
       ctx.lineWidth = Math.max(1, size*0.002);
@@ -266,18 +279,8 @@ function draw(){
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(innerR*Math.cos(start), innerR*Math.sin(start)); ctx.stroke();
 
       // label
-      const labelRadius = innerR + ringThickness * 0.60;
-      drawArcLabel(f.name, labelRadius, mid, sliceAngle, pickLabelColor(f.base), ringThickness * 0.70);
-
-      // gray-out
-      if (f.disabled){
-        ctx.save();
-        ctx.beginPath(); ctx.arc(0,0,R,start,end); ctx.lineTo(0,0); ctx.closePath(); ctx.clip();
-        ctx.fillStyle = 'rgba(200,200,200,.60)'; ctx.fillRect(-R,-R,R*2,R*2);
-        ctx.globalAlpha = 0.35; ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 2;
-        for (let y=-R; y<R; y+=12){ ctx.beginPath(); ctx.moveTo(-R, y); ctx.lineTo(R, y+R*2); ctx.stroke(); }
-        ctx.restore();
-      }
+      const labelRadius = innerR + ringT * 0.60;
+      drawArcLabel(f.name, labelRadius, mid, sliceAngle, pickLabelColor(base), ringT * 0.70);
     }
   }
 
@@ -287,101 +290,159 @@ function draw(){
   ctx.beginPath(); ctx.arc(0,0,R,0,TWO_PI); ctx.stroke();
 
   const hubR = size * 0.14;
-  const hubGrad = ctx.createRadialGradient(0,0,hubR*0.4, 0,0,hubR);
-  hubGrad.addColorStop(0,'rgba(255,255,255,.22)'); hubGrad.addColorStop(1,'rgba(0,0,0,.28)');
-  ctx.fillStyle = hubGrad; ctx.beginPath(); ctx.arc(0,0,hubR,0,TWO_PI); ctx.fill();
+  ctx.fillStyle = '#0f0f0f';
+  ctx.beginPath(); ctx.arc(0,0,hubR,0,TWO_PI); ctx.fill();
 
   ctx.restore();
 }
 
-/* ---------- Spin ---------- */
-function normalizeAngle(a){
+/* ---------- Spin with inertia (fair; target chosen first) ---------- */
+function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+function normalizeAngle(a, extraTurns){
   a = a % TWO_PI; if (a > Math.PI) a -= TWO_PI; if (a < -Math.PI) a += TWO_PI;
-  return a + TWO_PI * (4 + secureRandomInt(4));
+  return a + TWO_PI * extraTurns;
 }
+
 function spin(){
   if (state.spinning) return;
-  const choices = activeIndices();
+
+  const choices = activeIndices(); // uniform distribution over remaining fruits
   if (!choices.length){ statusEl.textContent = 'All fruits have been chosen.'; return; }
 
+  // Choose outcome FIRST (fair), then animate toward its center
   const pick = choices[secureRandomInt(choices.length)];
   const sliceAngle = TWO_PI / FRUITS.length;
   const targetCenter = pick * sliceAngle + sliceAngle/2;
   const baseTarget = -Math.PI/2 - targetCenter;
 
   const startRotation = state.rotation;
-  const delta = normalizeAngle(baseTarget - startRotation);
-  const duration = 5200 + secureRandomInt(1200);
+  const extraTurns = prefersReduced ? 0 : (4 + secureRandomInt(4)); // feel of weight
+  const delta = normalizeAngle(baseTarget - startRotation, extraTurns);
+  const duration = prefersReduced ? 900 : (5200 + secureRandomInt(1200));
+
+  // button tactile state
+  // handled via pointer listeners; but ensure quick visual if keyboard
+  spinBtn.classList.add('pressed');
 
   const t0 = performance.now();
-  state.spinning = true; spinBtn.disabled = true; statusEl.textContent = 'Spinning…';
+  state.spinning = true;
+  spinBtn.disabled = true;
+  statusEl.textContent = 'Spinning…';
 
-  function frame(now){
+  if (rafId) cancelAnimationFrame(rafId);
+  const frame = (now) => {
     const t = Math.min(1, (now - t0) / duration);
     const eased = easeOutCubic(t);
     state.rotation = startRotation + delta * eased;
     draw();
 
-    if (t < 1){ requestAnimationFrame(frame); }
-    else{
+    if (t < 1){
+      rafId = requestAnimationFrame(frame);
+    } else {
       state.rotation = startRotation + delta; draw();
 
       const f = FRUITS[pick];
       if (f.split){
-        // Apple: disable both halves; user chooses red/green IRL
-        f.subDisabled = [true, true];
-        afterPick('Apple', f, ['#d62828','#2aa74a'], f.icons);
+        f.subDisabled = [true, true]; // Apple: both halves unavailable until reset
+        afterPick('Apple', ['🍎','🍏'], f.bases);
       } else {
         f.disabled = true;
-        afterPick(f.name, f, [f.base], [f.icon]);
+        afterPick(f.name, [f.emoji], [f.base]);
       }
     }
-  }
-  requestAnimationFrame(frame);
+  };
+  rafId = requestAnimationFrame(frame);
 }
 
-/* ---------- Modal ---------- */
-function openModal(title, border, icons){
+/* ---------- Modal (themed), focus trap, inert page ---------- */
+function setAppInert(isInert){
+  [headerEl, mainEl].forEach(el => {
+    if (!el) return;
+    if (isInert){ el.setAttribute('inert',''); el.setAttribute('aria-hidden','true'); }
+    else { el.removeAttribute('inert'); el.removeAttribute('aria-hidden'); }
+  });
+}
+function focusTrapHandler(e){
+  if (e.key !== 'Tab') return;
+  const focusables = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  const list = Array.from(focusables).filter(el => !el.hasAttribute('disabled') && el.offsetParent !== null);
+  if (!list.length) return;
+  const first = list[0], last = list[list.length-1];
+  if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+}
+function keyCloseHandler(e){ if (e.key === 'Escape') closeModal(); }
+
+function openModal(title, emojis, colors){
   modalTitle.textContent = title;
 
-  if (border.length === 2){
-    modalPanel.style.borderImage = `linear-gradient(90deg, ${border[0]} 0 50%, ${border[1]} 50% 100%) 1`;
+  const base = colors[0];
+  const accent = colors[1] ? colors[1] : lighten(base,0.25);
+
+  // Theme the panel (border + subtle bg tint)
+  if (colors.length === 2){
+    modalPanel.style.borderImage = `linear-gradient(90deg, ${colors[0]} 0 50%, ${colors[1]} 50% 100%) 1`;
   } else {
     modalPanel.style.borderImage = 'unset';
-    modalPanel.style.borderColor = border[0];
+    modalPanel.style.borderColor = base;
   }
+  modalPanel.style.background = `linear-gradient(180deg, ${accent}22, #121212 40%)`;
 
-  modalIcons.innerHTML = '';
-  icons.forEach(src => {
-    const img = new Image();
-    img.src = src; img.alt = '';
-    modalIcons.appendChild(img);
-  });
+  // Emoji row
+  modalIcons.textContent = '';
+  const span = document.createElement('div');
+  span.textContent = emojis.join(' ');
+  modalIcons.appendChild(span);
 
+  state.lastFocus = document.activeElement;
+  setAppInert(true);
   modal.hidden = false;
+  document.addEventListener('keydown', focusTrapHandler);
+  document.addEventListener('keydown', keyCloseHandler);
   modalOk.focus();
 }
-function afterPick(label, fruit, borderColors, iconList){
+function closeModal(){
+  modal.hidden = true;
+  setAppInert(false);
+  document.removeEventListener('keydown', focusTrapHandler);
+  document.removeEventListener('keydown', keyCloseHandler);
+  (state.lastFocus && typeof state.lastFocus.focus === 'function' ? state.lastFocus : spinBtn).focus();
+}
+
+/* After pick: update status, auto-reset when done */
+function afterPick(label, emojis, colorList){
   persistDisabled();
   draw();
 
   const remaining = activeIndices().length;
   statusEl.textContent = `${label} selected. ${remaining} remaining.`;
   state.spinning = false;
-  spinBtn.disabled = remaining === 0;
 
-  openModal(label, borderColors, iconList);
+  openModal(label, emojis, colorList);
+
+  const noneLeft = remaining === 0;
+  spinBtn.disabled = noneLeft;
+
+  if (noneLeft){
+    // Auto reset after the user acknowledges the modal, or after a short delay fallback
+    const doReset = () => {
+      resetAll();
+      statusEl.textContent = 'All fruits were chosen. Spinner reset.';
+    };
+    const once = () => { modalOk.removeEventListener('click', once); doReset(); };
+    modalOk.addEventListener('click', once);
+    setTimeout(()=>{ if (!modal.hidden){ closeModal(); doReset(); } }, 3500);
+  }
 }
-modalOk.addEventListener('click', () => { modal.hidden = true; });
-modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = true; });
 
 /* ---------- Persistence ---------- */
 function persistDisabled(){
   const data = FRUITS.map(f => f.split ? { split:true, sub:f.subDisabled } : !!f.disabled);
-  localStorage.setItem('simsFruitDisabled_v3', JSON.stringify(data));
+  localStorage.setItem('simsFruitDisabled_v4', JSON.stringify(data));
 }
 function restoreDisabled(){
-  const raw = localStorage.getItem('simsFruitDisabled_v3');
+  const raw = localStorage.getItem('simsFruitDisabled_v4');
   if (!raw) return;
   try{
     const data = JSON.parse(raw);
@@ -394,15 +455,43 @@ function restoreDisabled(){
 }
 
 /* ---------- Controls & init ---------- */
-spinBtn.addEventListener('click', spin);
-resetBtn.addEventListener('click', () => {
+function resetAll(){
   FRUITS.forEach(f => { if (f.split) f.subDisabled = [false,false]; else f.disabled = false; });
-  localStorage.removeItem('simsFruitDisabled_v3');
+  localStorage.removeItem('simsFruitDisabled_v4');
   state.rotation = 0; state.spinning = false;
-  spinBtn.disabled = false; statusEl.textContent = '';
-  draw();
-});
+  spinBtn.disabled = false; draw();
+}
 
+spinBtn.addEventListener('click', spin);
+resetBtn.addEventListener('click', () => { resetAll(); statusEl.textContent = ''; });
+
+/* Tactile press + ripple (mouse & touch) */
+function pressStart(ev){
+  const rect = spinBtn.getBoundingClientRect();
+  const x = (ev.clientX ?? (ev.touches && ev.touches[0].clientX)) - rect.left;
+  const y = (ev.clientY ?? (ev.touches && ev.touches[0].clientY)) - rect.top;
+  spinBtn.style.setProperty('--rx', `${x}px`);
+  spinBtn.style.setProperty('--ry', `${y}px`);
+  spinBtn.classList.add('pressed');
+  spinBtn.classList.remove('rippling');
+  // trigger reflow to restart animation cleanly
+  // eslint-disable-next-line no-unused-expressions
+  spinBtn.offsetTop;
+  spinBtn.classList.add('rippling');
+}
+function pressEnd(){
+  spinBtn.classList.remove('pressed');
+}
+spinBtn.addEventListener('pointerdown', pressStart);
+spinBtn.addEventListener('pointerup', pressEnd);
+spinBtn.addEventListener('pointerleave', pressEnd);
+spinBtn.addEventListener('pointercancel', pressEnd);
+
+modalOk.addEventListener('click', closeModal);
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+/* Boot */
 restoreDisabled();
+readCSSVars();
 resizeCanvas();
 draw();
