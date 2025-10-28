@@ -4,9 +4,8 @@
   --wheel-size: clamp(300px, 92vmin, 720px);
   --inner-coverage: 0.88;
 
-  /* SPIN button theme */
+  /* SPIN button */
   --spin-solid: #8fb4de; /* solid gray-blue */
-  --bb-default: #8fb4de; /* fallback bubble color */
 }
 
 /* OLED dark */
@@ -39,49 +38,60 @@ body{
   position: relative;
   width: var(--wheel-size);
   height: var(--wheel-size);
+  /* hard-center the button relative to the canvas on ALL screens */
   display: grid;
+  grid-template-areas: "stack";
   place-items: center;
   filter: drop-shadow(0 18px 40px rgba(0,0,0,.75));
 }
 #wheel{
+  grid-area: stack;
   display:block;
   width: 100%; height: 100%; border-radius: 50%;
   background: #0a0a0a;
-  /* remove faint outer ring */
-  box-shadow: none;
+  box-shadow: none; /* remove faint ring */
 }
 
-/* pointer (smaller, inward, wobble) */
+/* pointer (smaller, tip points DOWN, wobble) */
 .pointer{
+  grid-area: stack;
   position:absolute; top: -4px; left: 50%;
-  transform: translateX(-50%) rotate(var(--wobble, 0deg));
+  transform: translateX(-50%) rotate(calc(var(--wobble, 0deg)));
   transform-origin: 50% 8px; /* hinge near top */
   width: 0; height: 0; z-index: 3; pointer-events: none; user-select: none;
   border-left: 12px solid transparent; border-right: 12px solid transparent;
-  border-bottom: 20px solid #fff; /* points inward */
+  border-top: 20px solid #fff;   /* tip DOWN */
   filter: drop-shadow(0 3px 8px rgba(0,0,0,.6));
 }
 .pointer::after{
-  content: ""; position: absolute; top: 18px; left: -10px;
+  content: ""; position: absolute; top: -4px; left: -10px;
   width: 20px; height: 5px; border-radius: 4px; background: rgba(255,255,255,.92);
+  transform: translateY(20px);
 }
 
-/* SPIN button + bubble class */
+/* SPIN button */
 #spin{
-  position:absolute;
-  width: clamp(108px, 22vmin, 170px);
-  height: clamp(108px, 22vmin, 170px);
+  grid-area: stack;
+  width: clamp(112px, 24vmin, 178px);
+  height: clamp(112px, 24vmin, 178px);
   border-radius: 50%;
   border: 0;
-  font-weight: 900; letter-spacing: .5px; font-size: clamp(20px, 3.2vmin, 30px);
-  color: #0d1220;
+  display:flex; align-items:center; justify-content:center;
+  font-weight: 900; letter-spacing: .6px; font-size: clamp(22px, 3.5vmin, 32px);
+  color: #0b0f1a;
   background: var(--spin-solid);
-  box-shadow: 0 12px 26px rgba(0,0,0,.6), inset 0 3px 8px rgba(255,255,255,.55), inset 0 -8px 14px rgba(0,0,0,.2);
+  box-shadow: 0 16px 28px rgba(0,0,0,.65),
+              inset 0 10px 14px rgba(255,255,255,.38),
+              inset 0 -16px 24px rgba(0,0,0,.35);
   cursor: pointer; z-index: 2; transition: transform .12s ease, opacity .2s ease;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+
+  /* letter-pressed (debossed) text */
+  text-shadow: 0 -1px 0 rgba(255,255,255,.45),
+               0 1px 0 rgba(0,0,0,.65);
 }
 #spin:hover{ transform: translateY(-1px) scale(1.02); }
-#spin:active{ transform: translateY(1px) scale(.96); }
+#spin:active{ transform: translateY(1px) scale(.95); }
 #spin[disabled]{ opacity:.6; cursor:not-allowed; }
 
 /* Controls */
@@ -98,15 +108,15 @@ body{
 .modal{ position:fixed; inset:0; background:rgba(0,0,0,.65); display:grid; place-items:center; z-index:10; }
 .modal[hidden]{ display:none; }
 .modal__panel{
-  width:min(90vw,360px);
-  background:#121212;
+  width:min(90vw,380px);
+  background:#0f0f12;  /* SOLID, set by JS tint */
   border:3px solid #7ac9ff; /* themed in JS */
-  border-radius:14px; padding:16px; text-align:center;
+  border-radius:18px; padding:18px; text-align:center;
   box-shadow:0 20px 60px rgba(0,0,0,.8);
 }
-.modal__icons{ display:flex; justify-content:center; gap:8px; margin-top:2px; font-size:46px; }
-.modal h2{ margin:8px 0 16px; font-size:22px; font-weight:900; }
-.primary{ background:#222; color:#e6edf6; font-weight:800; border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:10px 14px; cursor:pointer; }
+.modal__icons{ display:flex; justify-content:center; gap:8px; margin-top:4px; font-size:52px; }
+.modal h2{ margin:10px 0 18px; font-size:24px; font-weight:900; }
+.primary{ background:#222; color:#e6edf6; font-weight:800; border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:12px 16px; cursor:pointer; }
 
 /* Focus */
 button:focus { outline:none; }
@@ -120,68 +130,44 @@ button:focus-visible {
 @media (prefers-reduced-motion: reduce){ #spin{ transition:none; } }
 
 /* ================================
-   BUBBLE EFFECT (from CodePen) mechanics
+   BUBBLE EFFECT (CodePen mechanics)
    ================================ */
 .bubbly-button{
-  font-family: 'Helvetica','Arial',sans-serif;
-  display:inline-block;
-  font-size:1em;
-  padding:1em 2em;
-  margin:0;
-  -webkit-appearance:none; appearance:none;
-  background-color:#ff0081;
-  color:#fff;
-  border-radius:4px;
-  border:none;
-  cursor:pointer;
-  position:relative;
-  transition: transform ease-in .1s, box-shadow ease-in .25s;
-  box-shadow: 0 2px 25px rgba(255,0,130,.5);
+  display:inline-block; position:relative; cursor:pointer;
+  border:none; background:#ff0081; color:#fff; border-radius:4px;
+  transition: transform ease-in .1s, box-shadow ease-in .25s; box-shadow: 0 2px 25px rgba(255,0,130,.5);
 }
-.bubbly-button:focus{ outline:0; }
 .bubbly-button:before,
 .bubbly-button:after{
   position:absolute; content:''; display:block;
-  width:160%; /* bigger bubbles */
-  height:120%;
-  left:-30%;
-  z-index:-1000; transition: all ease-in-out .6s;
+  width:180%;  /* LARGER bubbles */
+  height:140%;
+  left:-40%;
+  z-index:-1000; transition: all ease-in-out .7s;
   background-repeat:no-repeat;
 }
-.bubbly-button:before{
-  display:none; top:-85%;
-  background-image: var(--top-bg);
-  background-size: var(--top-size);
-}
-.bubbly-button:after{
-  display:none; bottom:-85%;
-  background-image: var(--bot-bg);
-  background-size: var(--bot-size);
-}
+.bubbly-button:before{ display:none; top:-95%; background-image: var(--top-bg); background-size: var(--top-size); }
+.bubbly-button:after { display:none; bottom:-95%; background-image: var(--bot-bg); background-size: var(--bot-size); }
 .bubbly-button:active{ transform: scale(0.92); }
-.bubbly-button.animate:before{ display:block; animation: topBubbles .85s ease-out forwards; }
-.bubbly-button.animate:after { display:block; animation: bottomBubbles .85s ease-out forwards; }
+.bubbly-button.animate:before{ display:block; animation: topBubbles .9s ease-out forwards; }
+.bubbly-button.animate:after { display:block; animation: bottomBubbles .9s ease-out forwards; }
 
 @keyframes topBubbles{
-  0%  { background-position:5% 90%,10% 90%,10% 90%,15% 90%,25% 90%,25% 90%,40% 90%,55% 90%,70% 90%,82% 90%,95% 90%,30% 90%; }
-  50% { background-position:0% 70%,0% 30%,10% 40%,20% 0%,30% 30%,22% 50%,50% 55%,65% 25%,90% 45%,82% 15%,95% 30%,30% 10%; }
-  100%{
-    background-position:0% 55%,0% 10%,10% 30%,20% -10%,30% 20%,22% 40%,50% 40%,65% 10%,90% 20%,82% 0%,95% 10%,30% 0%;
-    background-size:0% 0%,0% 0%,0% 0%,0% 0%,0% 0%,0% 0%;
-  }
+  0%  { background-position:5% 90%,12% 90%,10% 90%,18% 90%,25% 90%,25% 90%,40% 90%,55% 90%,70% 90%,82% 90%,95% 90%,30% 90%,48% 90%; }
+  50% { background-position:0% 70%,0% 30%,10% 45%,20% 0%,30% 30%,22% 50%,50% 58%,65% 25%,90% 45%,82% 15%,95% 30%,30% 10%,48% 20%; }
+  100%{ background-position:0% 55%,0% 10%,10% 30%,20% -10%,30% 20%,22% 40%,50% 40%,65% 10%,90% 20%,82% 0%,95% 10%,30% 0%,48% 0%; background-size:0% 0%; }
 }
 @keyframes bottomBubbles{
-  0%  { background-position:10% -10%,30% 10%,55% -10%,70% -10%,85% -10%,70% -10%,70% 0%,5% -10%,95% -10%; }
-  50% { background-position:0% 85%,20% 80%,45% 70%,60% 100%,75% 75%,95% 65%,105% 0%,5% 80%,95% 85%; }
-  100%{
-    background-position:0% 95%,20% 90%,45% 80%,60% 110%,75% 90%,95% 80%,110% 10%,5% 100%,95% 100%;
-    background-size:0% 0%,0% 0%,0% 0%,0% 0%,0% 0%,0% 0%;
-  }
+  0%  { background-position:10% -10%,30% 10%,55% -10%,70% -10%,85% -10%,70% -10%,70% 0%,5% -10%,95% -10%,40% -10%; }
+  50% { background-position:0% 85%,20% 80%,45% 70%,60% 100%,75% 75%,95% 65%,105% 0%,5% 80%,95% 85%,40% 80%; }
+  100%{ background-position:0% 95%,20% 90%,45% 80%,60% 110%,75% 90%,95% 80%,110% 10%,5% 100%,95% 100%,40% 100%; background-size:0% 0%; }
 }
 
-/* keep our circular solid look and let JS randomize colors/sizes */
+/* tie the mechanics to our circular button */
 #spin.bubbly-button{
   background: var(--spin-solid);
-  color:#0d1220; border-radius:50%;
-  box-shadow: 0 12px 26px rgba(0,0,0,.6), inset 0 3px 8px rgba(255,255,255,.55), inset 0 -8px 14px rgba(0,0,0,.2);
+  color:#0b0f1a; border-radius:50%;
+  box-shadow: 0 16px 28px rgba(0,0,0,.65),
+              inset 0 10px 14px rgba(255,255,255,.38),
+              inset 0 -16px 24px rgba(0,0,0,.35);
 }
