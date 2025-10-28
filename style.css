@@ -4,12 +4,9 @@
   --wheel-size: clamp(300px, 92vmin, 720px);
   --inner-coverage: 0.88;
 
-  /* button theme (gray-blue) */
-  --spin-bg-1: #ffffff;
-  --spin-bg-2: #d4e7ff;
-  --spin-bg-3: #a6d3ff;
-  --spin-bg-4: #7ac9ff;
-  --bb-default: #8fb4de; /* fallback particle color */
+  /* SPIN button theme */
+  --spin-solid: #8fb4de; /* solid gray-blue */
+  --bb-default: #8fb4de; /* fallback bubble color */
 }
 
 /* OLED dark */
@@ -19,7 +16,7 @@ body{
   margin: 0;
   background: #000;
   color: var(--ink);
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  font-family: Outfit, system-ui, -apple-system, Segoe UI, Roboto, Arial;
   display: grid;
   grid-template-rows: auto 1fr;
 }
@@ -27,7 +24,7 @@ body{
 /* Header */
 .site-header{ text-align:center; padding:18px 16px 8px; }
 .site-header h1{
-  margin:0; font-weight:900; font-size:clamp(26px,6.2vmin,62px); letter-spacing:.5px; line-height:1.05;
+  margin:0; font-weight:900; font-size:clamp(26px,6.2vmin,62px); letter-spacing:.2px; line-height:1.05;
   filter: drop-shadow(0 6px 20px rgba(0,0,0,.85)); white-space:nowrap;
 }
 .site-header h1 .h1-word{ background: linear-gradient(#dfe6f3,#b7c5de); -webkit-background-clip:text; background-clip:text; color:transparent; }
@@ -50,49 +47,49 @@ body{
   display:block;
   width: 100%; height: 100%; border-radius: 50%;
   background: #0a0a0a;
-  /* no outer faint ring; keep subtle inner glow off */
-  box-shadow:
-    inset 0 0 0 0 rgba(255,255,255,0),
-    inset 0 0 0 rgba(255,255,255,0);
+  /* remove faint outer ring */
+  box-shadow: none;
 }
 
-/* inward pointer (smaller) */
+/* pointer (smaller, inward, wobble) */
 .pointer{
-  position:absolute; top: -6px; left: 50%; transform: translateX(-50%);
+  position:absolute; top: -4px; left: 50%;
+  transform: translateX(-50%) rotate(var(--wobble, 0deg));
+  transform-origin: 50% 8px; /* hinge near top */
   width: 0; height: 0; z-index: 3; pointer-events: none; user-select: none;
-  border-left: 14px solid transparent; border-right: 14px solid transparent;
-  border-bottom: 24px solid #fff; /* points inward */
+  border-left: 12px solid transparent; border-right: 12px solid transparent;
+  border-bottom: 20px solid #fff; /* points inward */
   filter: drop-shadow(0 3px 8px rgba(0,0,0,.6));
 }
 .pointer::after{
-  content: ""; position: absolute; top: 21px; left: -12px;
-  width: 24px; height: 6px; border-radius: 4px; background: rgba(255,255,255,.9);
+  content: ""; position: absolute; top: 18px; left: -10px;
+  width: 20px; height: 5px; border-radius: 4px; background: rgba(255,255,255,.92);
 }
 
-/* SPIN button + CodePen bubble class */
+/* SPIN button + bubble class */
 #spin{
   position:absolute;
-  width: clamp(96px, 18vmin, 150px);
-  height: clamp(96px, 18vmin, 150px);
+  width: clamp(108px, 22vmin, 170px);
+  height: clamp(108px, 22vmin, 170px);
   border-radius: 50%;
   border: 0;
-  font-weight: 900; letter-spacing: .6px; font-size: clamp(16px, 2.2vmin, 22px);
+  font-weight: 900; letter-spacing: .5px; font-size: clamp(20px, 3.2vmin, 30px);
   color: #0d1220;
-  background: radial-gradient(120% 100% at 30% 25%, var(--spin-bg-1) 0%, var(--spin-bg-2) 35%, var(--spin-bg-3) 70%, var(--spin-bg-4) 100%);
-  box-shadow: 0 12px 26px rgba(0,0,0,.6), inset 0 3px 8px rgba(255,255,255,.7), inset 0 -8px 14px rgba(0,0,0,.25);
+  background: var(--spin-solid);
+  box-shadow: 0 12px 26px rgba(0,0,0,.6), inset 0 3px 8px rgba(255,255,255,.55), inset 0 -8px 14px rgba(0,0,0,.2);
   cursor: pointer; z-index: 2; transition: transform .12s ease, opacity .2s ease;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
 #spin:hover{ transform: translateY(-1px) scale(1.02); }
-#spin:active{ transform: translateY(1px) scale(.965); }
+#spin:active{ transform: translateY(1px) scale(.96); }
 #spin[disabled]{ opacity:.6; cursor:not-allowed; }
 
 /* Controls */
 .controls{ display:flex; align-items:center; gap:14px; margin-top: 10px; }
 .reset{
   background:#1a1a1a; border: 1px solid rgba(255,255,255,.15);
-  color:#e2e8f0; padding: 10px 14px; border-radius:10px; cursor:pointer;
-  font-weight:700; letter-spacing:.2px;
+  color:#e2e8f0; padding: 12px 16px; border-radius:10px; cursor:pointer;
+  font-weight:800; letter-spacing:.2px;
 }
 .reset:hover{ border-color: rgba(255,255,255,.3); }
 .status{ min-height:1.5em; color:var(--muted); font-weight:600; letter-spacing:.2px; }
@@ -101,14 +98,14 @@ body{
 .modal{ position:fixed; inset:0; background:rgba(0,0,0,.65); display:grid; place-items:center; z-index:10; }
 .modal[hidden]{ display:none; }
 .modal__panel{
-  width:min(90vw,340px);
+  width:min(90vw,360px);
   background:#121212;
   border:3px solid #7ac9ff; /* themed in JS */
   border-radius:14px; padding:16px; text-align:center;
   box-shadow:0 20px 60px rgba(0,0,0,.8);
 }
-.modal__icons{ display:flex; justify-content:center; gap:8px; margin-top:2px; font-size:44px; }
-.modal h2{ margin:8px 0 16px; font-size:20px; }
+.modal__icons{ display:flex; justify-content:center; gap:8px; margin-top:2px; font-size:46px; }
+.modal h2{ margin:8px 0 16px; font-size:22px; font-weight:900; }
 .primary{ background:#222; color:#e6edf6; font-weight:800; border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:10px 14px; cursor:pointer; }
 
 /* Focus */
@@ -123,8 +120,7 @@ button:focus-visible {
 @media (prefers-reduced-motion: reduce){ #spin{ transition:none; } }
 
 /* ================================
-   BUBBLE EFFECT from CodePen (CSS)
-   (copied mechanics; themed by variables)
+   BUBBLE EFFECT (from CodePen) mechanics
    ================================ */
 .bubbly-button{
   font-family: 'Helvetica','Arial',sans-serif;
@@ -146,66 +142,46 @@ button:focus-visible {
 .bubbly-button:before,
 .bubbly-button:after{
   position:absolute; content:''; display:block;
-  width:140%; height:100%; left:-20%;
-  z-index:-1000; transition: all ease-in-out .5s;
+  width:160%; /* bigger bubbles */
+  height:120%;
+  left:-30%;
+  z-index:-1000; transition: all ease-in-out .6s;
   background-repeat:no-repeat;
 }
 .bubbly-button:before{
-  display:none; top:-75%;
-  background-image:
-    radial-gradient(circle, #ff0081 20%, transparent 20%),
-    radial-gradient(circle, transparent 20%, #ff0081 20%, transparent 30%),
-    radial-gradient(circle, #ff0081 20%, transparent 20%),
-    radial-gradient(circle, #ff0081 20%, transparent 20%),
-    radial-gradient(circle, transparent 10%, #ff0081 15%, transparent 20%),
-    radial-gradient(circle, #ff0081 20%, transparent 20%),
-    radial-gradient(circle, #ff0081 20%, transparent 20%),
-    radial-gradient(circle, #ff0081 20%, transparent 20%),
-    radial-gradient(circle, #ff0081 20%, transparent 20%);
-  background-size: 10% 10%,20% 20%,15% 15%,20% 20%,18% 18%,10% 10%,15% 15%,10% 10%,18% 18%;
+  display:none; top:-85%;
+  background-image: var(--top-bg);
+  background-size: var(--top-size);
 }
 .bubbly-button:after{
-  display:none; bottom:-75%;
-  background-image:
-    radial-gradient(circle, #ff0081 20%, transparent 20%),
-    radial-gradient(circle, #ff0081 20%, transparent 20%),
-    radial-gradient(circle, transparent 10%, #ff0081 15%, transparent 20%),
-    radial-gradient(circle, #ff0081 20%, transparent 20%),
-    radial-gradient(circle, #ff0081 20%, transparent 20%),
-    radial-gradient(circle, #ff0081 20%, transparent 20%),
-    radial-gradient(circle, #ff0081 20%, transparent 20%);
-  background-size: 15% 15%,20% 20%,18% 18%,20% 20%,15% 15%,10% 10%,20% 20%;
+  display:none; bottom:-85%;
+  background-image: var(--bot-bg);
+  background-size: var(--bot-size);
 }
-.bubbly-button:active{
-  transform: scale(0.9);
-  background-color: #e60074;
-  box-shadow: 0 2px 25px rgba(255,0,130,.2);
-}
-.bubbly-button.animate:before{ display:block; animation: topBubbles .75s ease-in-out forwards; }
-.bubbly-button.animate:after { display:block; animation: bottomBubbles .75s ease-in-out forwards; }
+.bubbly-button:active{ transform: scale(0.92); }
+.bubbly-button.animate:before{ display:block; animation: topBubbles .85s ease-out forwards; }
+.bubbly-button.animate:after { display:block; animation: bottomBubbles .85s ease-out forwards; }
 
 @keyframes topBubbles{
-  0%  { background-position:5% 90%,10% 90%,10% 90%,15% 90%,25% 90%,25% 90%,40% 90%,55% 90%,70% 90%; }
-  50% { background-position:0% 80%,0% 20%,10% 40%,20% 0%,30% 30%,22% 50%,50% 50%,65% 20%,90% 30%; }
+  0%  { background-position:5% 90%,10% 90%,10% 90%,15% 90%,25% 90%,25% 90%,40% 90%,55% 90%,70% 90%,82% 90%,95% 90%,30% 90%; }
+  50% { background-position:0% 70%,0% 30%,10% 40%,20% 0%,30% 30%,22% 50%,50% 55%,65% 25%,90% 45%,82% 15%,95% 30%,30% 10%; }
   100%{
-    background-position:0% 70%,0% 10%,10% 30%,20% -10%,30% 20%,22% 40%,50% 40%,65% 10%,90% 20%;
+    background-position:0% 55%,0% 10%,10% 30%,20% -10%,30% 20%,22% 40%,50% 40%,65% 10%,90% 20%,82% 0%,95% 10%,30% 0%;
     background-size:0% 0%,0% 0%,0% 0%,0% 0%,0% 0%,0% 0%;
   }
 }
 @keyframes bottomBubbles{
-  0%  { background-position:10% -10%,30% 10%,55% -10%,70% -10%,85% -10%,70% -10%,70% 0%; }
-  50% { background-position:0% 80%,20% 80%,45% 60%,60% 100%,75% 70%,95% 60%,105% 0%; }
+  0%  { background-position:10% -10%,30% 10%,55% -10%,70% -10%,85% -10%,70% -10%,70% 0%,5% -10%,95% -10%; }
+  50% { background-position:0% 85%,20% 80%,45% 70%,60% 100%,75% 75%,95% 65%,105% 0%,5% 80%,95% 85%; }
   100%{
-    background-position:0% 90%,20% 90%,45% 70%,60% 110%,75% 80%,95% 70%,110% 10%;
+    background-position:0% 95%,20% 90%,45% 80%,60% 110%,75% 90%,95% 80%,110% 10%,5% 100%,95% 100%;
     background-size:0% 0%,0% 0%,0% 0%,0% 0%,0% 0%,0% 0%;
   }
 }
 
-/* Overrides to keep our circular gray-blue look and random colors via CSS vars */
+/* keep our circular solid look and let JS randomize colors/sizes */
 #spin.bubbly-button{
-  background: radial-gradient(120% 100% at 30% 25%, var(--spin-bg-1) 0%, var(--spin-bg-2) 35%, var(--spin-bg-3) 70%, var(--spin-bg-4) 100%);
+  background: var(--spin-solid);
   color:#0d1220; border-radius:50%;
-  box-shadow: 0 12px 26px rgba(0,0,0,.6), inset 0 3px 8px rgba(255,255,255,.7), inset 0 -8px 14px rgba(0,0,0,.25);
+  box-shadow: 0 12px 26px rgba(0,0,0,.6), inset 0 3px 8px rgba(255,255,255,.55), inset 0 -8px 14px rgba(0,0,0,.2);
 }
-#spin.bubbly-button:before{ background-image: var(--top-bg); background-size: var(--top-size); }
-#spin.bubbly-button:after { background-image: var(--bot-bg); background-size: var(--bot-size); }
