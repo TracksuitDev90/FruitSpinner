@@ -3,7 +3,7 @@ const FRUITS = [
   { name: 'Strawberry', base: '#df2b2b', emoji: '🍓' },
   { name: 'Orange',     base: '#fb8c00', emoji: '🍊' },
   { name: 'Lemon',      base: '#f2ce24', emoji: '🍋' },
-  { name: 'Lime',       base: '#3fa64b', emoji: '🟢' },
+  { name: 'Lime',       base: '#3fa64b', emoji: '🍋‍🟩' },
   { name: 'Blueberry',  base: '#2060c9', emoji: '🫐' },
   { name: 'Grape',      base: '#7b3bb6', emoji: '🍇' },
   { name: 'Kiwi',       base: '#72b33f', emoji: '🥝' },
